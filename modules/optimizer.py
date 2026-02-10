@@ -157,7 +157,7 @@ def _greedy_global(vs, remaining, cost_engine, T, penalty):
                     best_oid = oid
                     best_data = (pr, eff, sc)
 
-        if best_vi is None:
+        if best_vi is None or best_data is None:
             break
 
         pr, eff, sc = best_data
@@ -196,7 +196,7 @@ def _greedy_sorted(vs, remaining, cost_engine, T, penalty, sort_key):
                 best_vi = vi
                 best_data = (pr, eff, sc)
 
-        if best_vi is not None and best_profit > -float('inf'):
+        if best_vi is not None and best_data is not None:
             pr, eff, sc = best_data
             do_assign(vs[best_vi], obj, pr, eff, sc)
             del remaining[oid]
@@ -231,7 +231,7 @@ def _greedy_vehicle_round_robin(vs, remaining, cost_engine, T, penalty):
                     best_oid = oid
                     best_data = (pr, eff, sc)
 
-            if best_oid is not None:
+            if best_oid is not None and best_data is not None:
                 pr, eff, sc = best_data
                 do_assign(v, remaining[best_oid], pr, eff, sc)
                 del remaining[best_oid]
@@ -280,7 +280,7 @@ def insertion_pass(vehicles: list[Vehicle], all_objectives: list[dict],
                     best_vi = vi
                     best_data = (pr, eff, sc)
 
-            if best_vi is not None:
+            if best_vi is not None and best_data is not None:
                 pr, eff, sc = best_data
                 do_assign(vehicles[best_vi], obj, pr, eff, sc)
                 unassigned.remove(obj)
@@ -487,7 +487,7 @@ def aggressive_insertion(vehicles: list[Vehicle], all_objectives: list[dict],
                 best_vi = vi
                 best_data = (pr, eff, sc)
 
-        if best_vi is not None:
+        if best_vi is not None and best_data is not None:
             pr, eff, sc = best_data
             do_assign(vehicles[best_vi], obj, pr, eff, sc)
 
@@ -592,6 +592,8 @@ def optimize(map_data: dict, sensor_data: dict, objectives_data: dict,
             best_name = name
 
     print(f"    >>> Phase 1 best: '{best_name}' profit={best_profit:.0f}")
+
+    assert best_vehicles is not None, "No strategy produced a result"
 
     # ── Phase 2: Insertion ───────────────────────────────────────────────
 

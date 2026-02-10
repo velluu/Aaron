@@ -6,6 +6,7 @@ Supports single-target and multi-target queries with deadlines.
 """
 
 import heapq
+from typing import Optional
 
 
 class PathResult:
@@ -22,8 +23,8 @@ class PathResult:
 
 def time_dijkstra(cost_engine, start_node: int, start_time: int,
                   vehicle_type: str, T: int,
-                  targets: set[int] = None,
-                  deadline: int = None) -> dict[int, PathResult]:
+                  targets: Optional[set[int]] = None,
+                  deadline: Optional[int] = None) -> dict[int, PathResult]:
     """
     Time-dependent Dijkstra from (start_node, start_time).
 
@@ -87,7 +88,7 @@ def time_dijkstra(cost_engine, start_node: int, start_time: int,
 
 def find_path(cost_engine, start_node: int, start_time: int,
               target_node: int, vehicle_type: str, T: int,
-              deadline: int = None) -> PathResult | None:
+              deadline: Optional[int] = None) -> Optional[PathResult]:
     """Find cheapest path from start to a single target. Returns None if unreachable."""
     results = time_dijkstra(
         cost_engine, start_node, start_time, vehicle_type, T,
@@ -98,7 +99,7 @@ def find_path(cost_engine, start_node: int, start_time: int,
 
 def find_paths_to_targets(cost_engine, start_node: int, start_time: int,
                           targets: set[int], vehicle_type: str, T: int,
-                          deadline: int = None) -> dict[int, PathResult]:
+                          deadline: Optional[int] = None) -> dict[int, PathResult]:
     """Find cheapest paths from start to multiple targets."""
     return time_dijkstra(
         cost_engine, start_node, start_time, vehicle_type, T,
