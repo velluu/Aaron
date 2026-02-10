@@ -1,0 +1,185 @@
+{
+  "T": 100,
+  "start_node": 1,
+  "drones": 2,
+  "trucks": 1,
+  "objectives": [
+    {
+      "id": 1,
+      "node": 4,
+      "release": 0,
+      "deadline": 10,
+      "points": 405
+    },
+    {
+      "id": 2,
+      "node": 9,
+      "release": 0,
+      "deadline": 10,
+      "points": 471
+    },
+    {
+      "id": 3,
+      "node": 17,
+      "release": 0,
+      "deadline": 16,
+      "points": 603
+    },
+    {
+      "id": 4,
+      "node": 11,
+      "release": 2,
+      "deadline": 12,
+      "points": 405
+    },
+    {
+      "id": 5,
+      "node": 19,
+      "release": 2,
+      "deadline": 12,
+      "points": 471
+    },
+    {
+      "id": 7,
+      "node": 5,
+      "release": 2,
+      "deadline": 12,
+      "points": 405
+    },
+    {
+      "id": 6,
+      "node": 12,
+      "release": 2,
+      "deadline": 18,
+      "points": 537
+    },
+    {
+      "id": 8,
+      "node": 22,
+      "release": 4,
+      "deadline": 14,
+      "points": 468
+    },
+    {
+      "id": 9,
+      "node": 8,
+      "release": 4,
+      "deadline": 20,
+      "points": 534
+    },
+    {
+      "id": 10,
+      "node": 2,
+      "release": 7,
+      "deadline": 17,
+      "points": 402
+    },
+    {
+      "id": 11,
+      "node": 21,
+      "release": 13,
+      "deadline": 23,
+      "points": 465
+    },
+    {
+      "id": 12,
+      "node": 16,
+      "release": 16,
+      "deadline": 32,
+      "points": 528
+    },
+    {
+      "id": 13,
+      "node": 20,
+      "release": 24,
+      "deadline": 34,
+      "points": 393
+    },
+    {
+      "id": 14,
+      "node": 14,
+      "release": 26,
+      "deadline": 36,
+      "points": 456
+    },
+    {
+      "id": 15,
+      "node": 18,
+      "release": 27,
+      "deadline": 43,
+      "points": 522
+    },
+    {
+      "id": 16,
+      "node": 3,
+      "release": 34,
+      "deadline": 44,
+      "points": 387
+    },
+    {
+      "id": 17,
+      "node": 13,
+      "release": 37,
+      "deadline": 47,
+      "points": 450
+    },
+    {
+      "id": 18,
+      "node": 10,
+      "release": 37,
+      "deadline": 47,
+      "points": 384
+    },
+    {
+      "id": 19,
+      "node": 15,
+      "release": 37,
+      "deadline": 47,
+      "points": 450
+    },
+    {
+      "id": 20,
+      "node": 6,
+      "release": 42,
+      "deadline": 52,
+      "points": 381
+    },
+    {
+      "id": 21,
+      "node": 7,
+      "release": 68,
+      "deadline": 78,
+      "points": 435
+    },
+    {
+      "id": 22,
+      "node": 13,
+      "release": 70,
+      "deadline": 80,
+      "points": 432
+    },
+    {
+      "id": 23,
+      "node": 17,
+      "release": 71,
+      "deadline": 87,
+      "points": 564
+    },
+    {
+      "id": 24,
+      "node": 3,
+      "release": 76,
+      "deadline": 86,
+      "points": 363
+    },
+    {
+      "id": 25,
+      "node": 16,
+      "release": 78,
+      "deadline": 94,
+      "points": 495
+    }
+  ],
+  "late_penalty_per_step": 10,
+  "miss_penalty": 0
+}

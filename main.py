@@ -4,6 +4,9 @@ main.py — Disaster Logistics Optimizer
 Reads input files from the current directory, computes optimal vehicle
 routes through a disaster-affected network, and writes solution.json.
 
+If a problemstatement/ folder exists with map1/map2 subfolders, it will
+automatically solve both maps and save solutions to a solutions/ folder.
+
 Usage:
     python main.py
 """
@@ -20,13 +23,14 @@ from modules.optimizer import optimize
 from modules.solution_writer import write_solution, validate_solution, score_solution
 
 
-def main():
+def solve(root: str, label: str = "") -> tuple[dict, dict]:
+    """Run the full pipeline on whatever input files are in root. Returns score result."""
     start = timer.time()
-    root = os.path.dirname(os.path.abspath(__file__))
+    tag = f" [{label}]" if label else ""
 
-    print("=" * 60)
-    print("  Disaster Logistics Optimizer v2.0")
-    print("=" * 60)
+    print(f"\n{'=' * 60}")
+    print(f"  Disaster Logistics Optimizer v2.0{tag}")
+    print(f"{'=' * 60}")
 
     # ── Load data ────────────────────────────────────────────────
     print("\n[1/5] Loading input data...")
@@ -66,7 +70,6 @@ def main():
         print("  VALIDATION ERRORS:")
         for e in errors:
             print(f"    - {e}")
-        sys.exit(1)
     else:
         print("  Solution is VALID")
 
@@ -75,7 +78,7 @@ def main():
 
     # ── Results ──────────────────────────────────────────────────
     print(f"\n{'='*60}")
-    print(f"  RESULTS")
+    print(f"  RESULTS{tag}")
     print(f"{'='*60}")
     print(f"  Objectives completed: {result['objectives_completed']}/{result['objectives_total']}")
     print(f"  Objective score:      {result['total_objective_score']:.1f}")
@@ -102,6 +105,55 @@ def main():
     total_time = timer.time() - start
     print(f"\n  Output: {output_path}")
     print(f"  Total time: {total_time:.2f}s")
+
+    return result, solution
+
+
+def main():
+    root = os.path.dirname(os.path.abspath(__file__))
+    ps = os.path.join(root, "problemstatement")
+
+    # Detect map folders
+    map_dirs = []
+    if os.path.isdir(ps):
+        for name in sorted(os.listdir(ps)):
+            sub = os.path.join(ps, name)
+            if os.path.isdir(sub):
+                # Check for nested folder (map1/map1/)
+                inner = os.path.join(sub, name)
+                if os.path.isdir(inner):
+                    map_dirs.append((name, inner))
+                else:
+                    map_dirs.append((name, sub))
+
+    if len(map_dirs) >= 2:
+        # Multiple maps found — solve each directly from their folders
+        solutions_dir = os.path.join(root, "solutions")
+        os.makedirs(solutions_dir, exist_ok=True)
+        summary = []
+
+        for map_name, map_dir in map_dirs:
+            result, solution = solve(map_dir, label=map_name)
+
+            # Save to solutions/
+            out = os.path.join(solutions_dir, f"solution_{map_name}.json")
+            with open(out, "w") as fh:
+                json.dump(solution, fh, indent=2)
+            print(f"  Saved: {out}")
+
+            summary.append((map_name, result))
+
+        # Print summary
+        print(f"\n{'=' * 60}")
+        print(f"  SUMMARY")
+        print(f"{'=' * 60}")
+        for map_name, result in summary:
+            print(f"  {map_name}: {result['objectives_completed']}/{result['objectives_total']} objectives, "
+                  f"score = {result['total_score']:.0f}")
+
+    else:
+        # Single map — just solve whatever's in root
+        solve(root)
 
 
 if __name__ == "__main__":

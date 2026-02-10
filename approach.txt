@@ -1,0 +1,194 @@
+================================================================================
+                    DISASTER LOGISTICS OPTIMIZATION
+                    Problem Statement & Our Approach
+================================================================================
+
+PROBLEM STATEMENT
+-----------------
+
+We are given a city modeled as a weighted graph with N nodes and edges
+representing roads. Each edge has a type (0 = airspace, 1 = highway, 2 = street)
+and a base traversal weight. A fleet of vehicles — trucks and drones — starts
+at node 1 at time t=0 and must deliver supplies to objective locations within a
+T-step time horizon.
+
+Each objective specifies:
+  - A target node to reach
+  - A release time (earliest start) and deadline (latest arrival)
+  - A point value that decays linearly as arrival time increases
+  - Only one vehicle needs to visit an objective to claim its points
+
+The city is subject to dynamic weather from 4 sensor streams sampled at each
+time step:
+  - S_earth  : seismic activity
+  - S_rain   : rainfall intensity
+  - S_wind   : wind speed
+  - S_vis    : visibility
+
+Blocking Rules:
+  Trucks are blocked on a road at time t if:
+      W_base × S_earth(t) > 10  AND  W_base × S_rain(t) > 30
+
+  Drones are blocked on a road at time t if:
+      W_base × S_wind(t) > 60   AND  W_base × S_vis(t) < 6
+
+  Airspace edges (type 0) are never blocked.
+
+Travel cost on an unblocked edge at time t:
+  Trucks:  W_base × (1 + S_earth(t) + S_rain(t))
+  Drones:  W_base × (1 + S_wind(t))
+
+The goal is to MAXIMIZE:
+  Total Score = Sum of objective points earned − Total travel cost
+
+Constraints:
+  - Each vehicle's path must have exactly T entries (stays in place if idle)
+  - Trucks cannot traverse airspace edges (type 0)
+  - Vehicles cannot traverse blocked edges
+  - Each objective can be claimed by at most one vehicle
+  - Arrival must be within [release_time, deadline]
+
+Input Files:
+  - public_map.json    : graph structure (nodes, edges, types, weights)
+  - sensor_data.json   : 4 sensor arrays of length T
+  - objectives.json    : fleet composition and objective details
+
+Output:
+  - solution.json      : dictionary mapping each vehicle ID to a list of T node
+                         indices representing its path
+
+================================================================================
+
+OUR APPROACH
+------------
+
+1. PREPROCESSING
+   
+   a) Weather Blocking Precomputation
+      For every (road_type, time_step, vehicle_type) triple, we precompute
+      whether traversal is blocked using the sensor data and blocking rules.
+      This avoids redundant calculations during pathfinding.
+   
+   b) Cost Engine
+      We build a CostEngine that precomputes neighbor adjacency lists and edge
+      type lookups. Given a vehicle type and time step, it returns the exact
+      traversal cost (or infinity if blocked). This makes Dijkstra queries fast.
+
+2. PATHFINDING: TIME-DEPENDENT DIJKSTRA
+   
+   Standard Dijkstra is insufficient because edge costs and availability change
+   at every time step. We implement a time-expanded Dijkstra:
+     - State = (node, time)
+     - At each state, we expand to neighbors using the cost at that specific
+       time step
+     - Handles waiting (staying at current node for cost 0)
+     - Returns shortest path from a source node at a given start time to any
+       target node, respecting all blocking constraints
+
+3. MULTI-STRATEGY GREEDY CONSTRUCTION (Phase 1)
+   
+   We run 9 different greedy strategies, each assigning objectives to vehicles
+   in a different priority order:
+   
+     - global          : always pick the best (profit / cost) objective globally
+     - sorted_max_pts  : process objectives by descending point value
+     - sorted_deadline : process by earliest deadline first
+     - sorted_density  : process by points/window_size (tightest value density)
+     - sorted_release  : process by earliest release time
+     - sorted_tight_window : process by smallest (deadline − release) window
+     - sorted_late_deadline : process by latest deadline first
+     - sorted_wide_window : process by largest window first
+     - round_robin     : alternate objective assignment across vehicles
+   
+   Each strategy builds a complete solution. We keep the one with the highest
+   profit (points earned minus travel cost).
+   
+   Key insight: sorted_deadline and sorted_release consistently outperform
+   pure greedy because they ensure time-critical objectives get assigned first,
+   preventing deadline misses.
+
+4. INSERTION PASS (Phase 2)
+   
+   After the best greedy solution is selected, we scan all unassigned objectives
+   and try to insert each one into an existing vehicle's route. For each
+   vehicle, we check if the objective can be reached from the vehicle's current
+   position at any point in its schedule without violating time constraints.
+
+5. SWAP IMPROVEMENT (Phase 3)
+   
+   For every pair of vehicles (v1, v2), we attempt:
+     - Move: take an objective from v1 and give it to v2 (if v2 can serve it
+       more cheaply or v1 is overcrowded)
+     - Swap: exchange an objective between v1 and v2
+   
+   We accept any swap that increases total profit. This runs for up to 10
+   rounds or until no improvement is found.
+
+6. REORDER IMPROVEMENT (Phase 4)
+   
+   Within each vehicle's assigned objectives, we try reordering to reduce
+   travel cost:
+     - Pairwise swaps of adjacent objectives
+     - Sort by nearest-neighbor heuristic
+     - Sort by deadline
+   
+   Better orderings reduce backtracking and lower total travel cost.
+
+7. POST-REORDER INSERTION (Phase 4b)
+   
+   After reordering, vehicles may have freed up time. We run another insertion
+   pass to pick up any remaining unassigned objectives.
+
+8. AGGRESSIVE INSERTION (Phase 5)
+   
+   A final insertion pass with relaxed criteria — we accept any objective that
+   produces a net-positive contribution (points > additional travel cost),
+   even if marginal.
+
+9. ITERATIVE REFINEMENT (Phase 6)
+   
+   Phases 3–5 are repeated in a loop (up to 3 iterations) until the solution
+   stabilizes with no further improvement.
+
+================================================================================
+
+RESULTS
+-------
+
+  Map 1:  30/30 objectives completed,  Score = 16,176
+  Map 2:  25/25 objectives completed,  Score = 10,225
+
+Both solutions achieve 100% objective completion.
+
+================================================================================
+
+SENSOR ANALYSIS NOTE
+--------------------
+
+During development, we analyzed the 4 sensor streams and identified that the
+wind sensor exhibits irregular/biased behavior (values are suspiciously
+concentrated and do not follow the same distribution as the other sensors).
+However, since the scoring formula uses the raw sensor values as provided,
+we use them as-is without correction. The optimizer's routing strategies
+naturally adapt to the resulting blocking patterns.
+
+================================================================================
+
+FILE STRUCTURE
+--------------
+
+  main.py                  Entry point — solves both maps automatically
+  requirements.txt         Empty (no external dependencies)
+  approach.txt             This file
+  solutions/
+    solution_map1.json     Solution for map 1
+    solution_map2.json     Solution for map 2
+  modules/
+    data_loader.py         Loads map, sensor, and objective JSON files
+    weather.py             Computes road blocking from sensor data
+    cost.py                Traversal cost engine with precomputed lookups
+    router.py              Time-dependent Dijkstra pathfinding
+    optimizer.py           Multi-strategy greedy + local search optimizer
+    solution_writer.py     Validation, scoring, and JSON output
+
+================================================================================
